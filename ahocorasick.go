@@ -256,3 +256,49 @@ func (m *Matcher) Match(in []byte) []int {
 
 	return hits
 }
+
+// MatchSingleOccurance searches in for blices and returns first blice found as
+// indexes into the original dictionary
+func (m *Matcher) MatchSingleOccurance(in []byte) int {
+	m.counter++
+	//var hits []int
+
+	n := m.root
+
+	for _, b := range in {
+		c := int(b)
+
+		if !n.root && n.child[c] == nil {
+			n = n.fails[c]
+		}
+
+		if n.child[c] != nil {
+			f := n.child[c]
+			n = f
+
+			if f.output && f.counter != m.counter {
+				return f.index
+				//hits = append(hits, f.index)
+				//f.counter = m.counter
+			}
+
+			for !f.suffix.root {
+				f = f.suffix
+				if f.counter != m.counter {
+					return f.index
+					//hits = append(hits, f.index)
+					//f.counter = m.counter
+				}
+
+				// There's no point working our way up the
+				// suffixes if it's been done before for this call
+				// to Match. The matches are already in hits.
+
+				break
+			}
+		}
+	}
+
+	return -1
+	//return hits
+}
