@@ -324,3 +324,52 @@ func BenchmarkLongRegexpMany(b *testing.B) {
 		re5.FindAllIndex(bytes2, -1)
 	}
 }
+
+func TestMatcher_MatchSingleOccurance(t *testing.T) {
+	type args struct {
+		in []byte
+	}
+	tests := []struct {
+		name    string
+		matcher *Matcher
+		args    args
+		want    []byte
+	}{
+		{name: "NoMatch",
+			matcher: NewStringMatcher([]string{"Vodafone", "windows+mobile+application+search", "Phoenix"}),
+			args:    args{in: []byte("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.101 Safari/537.36")},
+			want:    nil},
+
+		{name: "MatchEmpty",
+			matcher: NewStringMatcher([]string{""}),
+			args:    args{in: []byte("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36")},
+			want:    nil},
+
+		{name: "MatchAtEndSpecialCase",
+			matcher: NewStringMatcher([]string{"Mozi1lla", "Mozilla1", "windows+mobile+application+search", "Mozilla"}),
+			args:    args{in: []byte("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.101 Safari/537.36")},
+			want:    []byte("Mozilla")},
+
+		{name: "MatchAtStart",
+			matcher: NewStringMatcher([]string{"Mozilla", "Mac", "Macintosh", "Safari", "Phoenix"}),
+			args:    args{in: []byte("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.101 Safari/537.36")},
+			want:    []byte("Mozilla")},
+
+		{name: "MatchInMiddle",
+			matcher: NewStringMatcher([]string{"Mac", "Macintosh", "Safari", "Phoenix"}),
+			args:    args{in: []byte("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36")},
+			want:    []byte("Safari")},
+
+		{name: "MatchAtEnd",
+			matcher: NewStringMatcher([]string{"Yahoo!_for_SMS", "T-Mobile+Dash", "Phoenix", "(Apple; CPU)", "", "Safari"}),
+			args:    args{in: []byte("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36")},
+			want:    []byte("Safari")},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.matcher.MatchSingleOccurance(tt.args.in); string(got) != string(tt.want) {
+				t.Errorf("Matcher.MatchSingleOccurance() = %v, want %v", string(got), string(tt.want))
+			}
+		})
+	}
+}
